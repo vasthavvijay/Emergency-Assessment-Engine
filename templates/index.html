@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Support Probability System</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --primary: #34495e;
+            --primary-hover: #1a252f;
+            --border-color: #dcdde1;
+            --critical-color: #e74c3c;
+            --standard-color: #2ecc71;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin: 0 auto;
+            max-width: 550px;
+            padding: 30px;
+        }
+
+        h2 {
+            border-bottom: 2px solid var(--bg-color);
+            margin-top: 0;
+            padding-bottom: 12px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 15px;
+            padding: 10px;
+            transition: border-color 0.2s ease;
+            width: 100%;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .input-hint {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        button {
+            background-color: var(--primary);
+            border: none;
+            border-radius: 4px;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 10px;
+            padding: 12px;
+            transition: background-color 0.2s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        #result {
+            border-radius: 6px;
+            border-left: 5px solid var(--primary);
+            background-color: #f8f9fa;
+            display: none;
+            margin-top: 25px;
+            padding: 20px;
+        }
+
+        #result.critical-border {
+            border-left-color: var(--critical-color);
+        }
+
+        #result.standard-border {
+            border-left-color: var(--standard-color);
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .result-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            font-weight: 500;
+        }
+
+        .badge {
+            border-radius: 4px;
+            font-weight: 700;
+            padding: 2px 8px;
+        }
+
+        .badge.critical {
+            background-color: #fde8e7;
+            color: var(--critical-color);
+        }
+
+        .badge.standard {
+            background-color: #e8f8f0;
+            color: var(--standard-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Emergency Assessment Engine</h2>
+    <form id="predictionForm">
+        <div class="form-group">
+            <label for="incident_type">Incident Type</label>
+            <select id="incident_type" name="incident_type">
+                <option value="medical">Medical Emergency</option>
+                <option value="fire">Fire</option>
+                <option value="accident">Traffic Accident</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="severity_score">Reported Severity Score</label>
+            <select id="severity_score" name="severity_score">
+                <option value="unknown">Unknown / Unreported</option>
+                <option value="2">Low (Scale: 1-5)</option>
+                <option value="8">High (Scale: 6-10)</option>
+            </select>
+            <div class="input-hint">Select Unknown to test algorithmic network marginalization.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="location_risk">Historical Location Risk</label>
+            <select id="location_risk" name="location_risk">
+                <option value="unknown">Unknown / Unmapped Area</option>
+                <option value="2">Low Historical Risk</option>
+                <option value="8">High Historical Risk</option>
+            </select>
+        </div>
+
+        <button type="submit">Execute Algorithmic Inference</button>
+    </form>
+
+    <div id="result">
+        <div class="result-row">
+            <span class="result-label">Bayesian Probability:</span>
+            <span id="probValue" style="font-weight: 700;">0.00%</span>
+        </div>
+        <div class="result-row">
+            <span class="result-label">Classification Status:</span>
+            <span id="statusValue" class="badge">STANDARD</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const data = {
+            incident_type: document.getElementById('incident_type').value,
+            severity_score: document.getElementById('severity_score').value,
+            location_risk: document.getElementById('location_risk').value
+        };
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            
+            if (result.error) {
+                alert(result.error);
+                return;
+            }
+
+            const resultBox = document.getElementById('result');
+            const probEl = document.getElementById('probValue');
+            const statusEl = document.getElementById('statusValue');
+
+            resultBox.style.display = 'block';
+            probEl.innerText = result.emergency_probability + '%';
+            statusEl.innerText = result.status.toUpperCase();
+            
+            // Apply dynamic theme changes based on risk profile
+            if (result.status === 'critical') {
+                resultBox.className = 'critical-border';
+                statusEl.className = 'badge critical';
+            } else {
+                resultBox.className = 'standard-border';
+                statusEl.className = 'badge standard';
+            }
+
+        } catch (error) {
+            console.error("Communication breakdown with Bayesian backend:", error);
+            alert("Connection to computing server failed.");
+        }
+    });
+</script>
+</body>
+</html>
